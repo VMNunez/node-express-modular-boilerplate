@@ -1,0 +1,86 @@
+{
+  "name": "node-express-modular-boilerplate",
+  "version": "1.0.0",
+  "description": "A highly scalable and modular Node.js API boilerplate. It features a clean architecture, integrated testing, linting, and a logical folder structure to kickstart your next project",
+  "main": "dist/app.js",
+  "scripts": {
+    "dev": "nodemon",
+    "build": " rimraf dist && npx prisma generate && tsc -p tsconfig.build.json && tsc-alias",
+    "start": "node dist/app.js",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\"",
+    "lint-fix": "eslint --fix \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\"",
+    "format": "prettier --write \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\" ",
+    "check-format": "prettier --check \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\"",
+    "prepare": "husky",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force --skip-seed",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "typescript",
+    "modular-architecture",
+    "api",
+    "rest",
+    "boilerplate",
+    "zod",
+    "prisma",
+    "vitest"
+  ],
+  "author": "Víctor Manuel Núñez Pradas",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.1.0",
+    "@prisma/client": "^6.16.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.0.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@eslint/js": "^9.35.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.1",
+    "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
+    "nodemon": "^3.1.10",
+    "prettier": "3.6.2",
+    "prisma": "^6.16.2",
+    "rimraf": "^6.0.1",
+    "supertest": "^7.1.4",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.43.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  },
+  "lint-staged": {
+    "**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}
