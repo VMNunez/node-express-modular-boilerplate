@@ -1,4 +1,4 @@
-# Node.js Express Layered Architecture Boilerplate
+# Node.js Express Modular Architecture Boilerplate
 
 A **production-ready**, **modular**, and **type-safe** Node.js boilerplate designed for **scalable APIs**.
 
