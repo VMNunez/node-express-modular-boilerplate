@@ -51,7 +51,7 @@ describe('healthController', () => {
     // Assert that the `json` method was called with an object containing `success: true` and a specific message
     expect(mockRes.json).toHaveBeenCalledWith({
       success: true,
-      message: 'Service is healthy',
+      message: 'Service is healthy - Successfully connected to database',
       responseObject: mockServiceResponse,
       statusCode: HTTP_STATUS.OK,
     });

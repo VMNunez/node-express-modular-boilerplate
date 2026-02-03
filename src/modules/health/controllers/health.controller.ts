@@ -20,7 +20,7 @@ const getHealth = async (req: Request, res: Response, next: NextFunction): Promi
       ? 'Service is healthy - Successfully connected to database'
       : 'Service unavailable - Database connection failed';
 
-    // Build the final HTTP response.
+    // Build the final HTTP response
     const serviceResponse = isHealthy
       ? ServiceResponse.success(message, healthData, statusCode)
       : ServiceResponse.failure(message, healthData, statusCode);

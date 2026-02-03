@@ -11,6 +11,7 @@ describe('env schema validation', () => {
       PORT: '4000',
       CORS_ORIGIN: 'http://localhost:4000',
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      JWT_ACCESS_SECRET: 'a'.repeat(32),
     };
 
     const result = envSchema.parse(validEnv);
@@ -19,14 +20,16 @@ describe('env schema validation', () => {
     expect(result.NODE_ENV).toBe('development');
     expect(result.HOST).toBe('localhost');
     expect(result.PORT).toBe(4000); // Check type coercion
-    expect(result.CORS_ORIGIN).toBe('http://localhost:4000');
+    expect(result.CORS_ORIGIN).toEqual(['http://localhost:4000']);
     expect(result.DATABASE_URL).toBe('postgres://user:pass@localhost:5432/db');
+    expect(result.JWT_ACCESS_SECRET).toHaveLength(32);
   });
 
   // Verifies that default values are used when variables are missing
   it('should use default values', () => {
     const envWithDefaults = {
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      JWT_ACCESS_SECRET: 'a'.repeat(32),
       // Other variables are intentionally missing to test defaults
     };
 
@@ -36,20 +39,29 @@ describe('env schema validation', () => {
     expect(result.NODE_ENV).toBe('production');
     expect(result.HOST).toBe('localhost');
     expect(result.PORT).toBe(8080);
-    expect(result.CORS_ORIGIN).toBe('http://localhost:8080');
+    expect(result.CORS_ORIGIN).toEqual(['http://localhost:8080']);
   });
 
   // Ensures an error is thrown if a required variable is missing
   it('should throw if DATABASE_URL is missing', () => {
-    // The validation function is wrapped to catch the thrown error
     expect(() =>
       validateEnv({
         NODE_ENV: 'test',
         HOST: 'localhost',
         PORT: '4000',
         CORS_ORIGIN: 'http://localhost:4000',
+        JWT_ACCESS_SECRET: 'a'.repeat(32),
         // DATABASE_URL is missing here, which should cause a failure
       }),
     ).toThrow('Invalid environment variables');
+  });
+
+  it('should parse comma-separated CORS_ORIGIN into array', () => {
+    const result = envSchema.parse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      JWT_ACCESS_SECRET: 'a'.repeat(32),
+      CORS_ORIGIN: 'http://localhost:3000,http://localhost:8080',
+    });
+    expect(result.CORS_ORIGIN).toEqual(['http://localhost:3000', 'http://localhost:8080']);
   });
 });

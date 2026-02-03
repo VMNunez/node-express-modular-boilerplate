@@ -19,7 +19,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force --skip-seed",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "generate:module": "node scripts/generate-module.js"
   },
   "keywords": [
     "node",
@@ -39,11 +40,13 @@
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.1.0",
     "@prisma/client": "^6.16.2",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.0.1",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.1.5"
   },
@@ -53,6 +56,7 @@
     "@eslint/js": "^9.35.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.1",
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-express": "^4.1.8",
