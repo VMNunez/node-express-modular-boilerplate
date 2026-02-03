@@ -231,6 +231,11 @@ Use the `.js` extension in import paths when targeting Node (e.g. `@modules/auth
 | `npm run db:seed`                   | Seed database with sample data         |
 | `npm run generate:module -- <name>` | Scaffold a new module (e.g. `product`) |
 
+### Testing
+
+- **Unit tests**: `npm test` runs Vitest for all `src/**/__tests__/**/*.test.ts` and `tests/**/*.test.ts`. Use `npm run test:coverage` for coverage.
+- **E2E (auth)**: The suite in `tests/e2e/auth.e2e.test.ts` runs without a database by default (middleware and validation tests). To run **full E2E** (register, login, protected route with real DB), set `E2E_USE_DATABASE=1` and ensure `.env.test` has a valid `DATABASE_URL`, then run `npm test`.
+
 ---
 
 ## Development and API Documentation

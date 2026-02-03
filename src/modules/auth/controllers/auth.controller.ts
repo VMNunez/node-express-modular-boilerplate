@@ -57,3 +57,18 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
     next(error);
   }
 };
+
+export const me = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user) {
+      res
+        .status(HTTP_STATUS.UNAUTHORIZED)
+        .json(ServiceResponse.failure('Authentication required', null, HTTP_STATUS.UNAUTHORIZED));
+      return;
+    }
+    res.status(HTTP_STATUS.OK).json(ServiceResponse.success('Current user', user, HTTP_STATUS.OK));
+  } catch (error) {
+    next(error);
+  }
+};
