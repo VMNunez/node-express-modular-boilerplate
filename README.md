@@ -167,8 +167,9 @@ src/
    # Run migrations
    npm run db:migrate
 
-   # Seed sample data (optional)
+   # Seed sample data (optional) — creates a demo user for testing auth
    npm run db:seed
+   # Demo login: demo@example.com / password123
    ```
 
 7. **Run the application**
