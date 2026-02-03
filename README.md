@@ -150,6 +150,12 @@ src/
 
     # Allowed origins (comma-separated for multiple domains)
     CORS_ORIGIN="http://localhost:3000,http://localhost:8080"
+
+    # JWT (use strong 32+ character secrets in production)
+    JWT_ACCESS_SECRET="your-access-secret-at-least-32-characters-long"
+    JWT_REFRESH_SECRET="your-refresh-secret-at-least-32-characters-long"
+    JWT_ACCESS_EXPIRES_IN="15m"
+    JWT_REFRESH_EXPIRES_IN="7d"
    ```
 
 6. **Setup database**
@@ -176,28 +182,54 @@ src/
    npm start
    ```
 
+### Path aliases (TypeScript)
+
+Imports use path aliases so you don't rely on relative paths. Configured in `tsconfig.json`:
+
+| Alias            | Resolves to              |
+| ---------------- | ------------------------ |
+| `@/*`            | `src/*`                  |
+| `@core/*`        | `src/core/*`             |
+| `@common/*`      | `src/common/*`           |
+| `@config/*`      | `src/core/config/*`      |
+| `@modules/*`     | `src/modules/*`          |
+| `@routes/*`      | `src/routes/*`           |
+| `@utils/*`       | `src/core/utils/*`       |
+| `@docs/*`        | `src/core/docs/*`        |
+| `@middlewares/*` | `src/core/middlewares/*` |
+| `@tests/*`       | `tests/*`                |
+
+Use the `.js` extension in import paths when targeting Node (e.g. `@modules/auth/services/auth.service.js`).
+
+### Common pitfalls
+
+- **Invalid environment variables**: If the app fails at startup with "Invalid environment variables", check that all required vars in `.env` match `env.schema.ts` (e.g. `JWT_ACCESS_SECRET` at least 32 characters, `CORS_ORIGIN` valid URL(s)).
+- **Database not migrated**: Run `npm run db:migrate` after cloning or changing the Prisma schema.
+- **CORS issues**: Ensure `CORS_ORIGIN` includes the exact origin your frontend uses (including port). Comma-separated values are supported.
+
 ---
 
 ## Available Scripts
 
-| Command                     | Description                            |
-| --------------------------- | -------------------------------------- |
-| `npm run dev`               | Run in development mode                |
-| `npm run build`             | Build TypeScript to JavaScript         |
-| `npm start`                 | Run application in production          |
-| `npm test`                  | Run tests with Vitest                  |
-| `npm run test:coverage`     | Run tests with coverage report         |
-| `npm run lint`              | Run ESLint to check code               |
-| `npm run lint-fix`          | Run ESLint and fix errors              |
-| `npm run format`            | Format code with Prettier              |
-| `npm run check-format`      | Check code formatting without fixing   |
-| `npm run prepare`           | Setup Git hooks with Husky             |
-| `npm run db:generate`       | Generate Prisma client                 |
-| `npm run db:migrate`        | Run database migrations                |
-| `npm run db:migrate:deploy` | Deploy migrations                      |
-| `npm run db:studio`         | Open Prisma Studio for data management |
-| `npm run db:reset`          | Reset database                         |
-| `npm run db:seed`           | Seed database with sample data         |
+| Command                             | Description                            |
+| ----------------------------------- | -------------------------------------- |
+| `npm run dev`                       | Run in development mode                |
+| `npm run build`                     | Build TypeScript to JavaScript         |
+| `npm start`                         | Run application in production          |
+| `npm test`                          | Run tests with Vitest                  |
+| `npm run test:coverage`             | Run tests with coverage report         |
+| `npm run lint`                      | Run ESLint to check code               |
+| `npm run lint-fix`                  | Run ESLint and fix errors              |
+| `npm run format`                    | Format code with Prettier              |
+| `npm run check-format`              | Check code formatting without fixing   |
+| `npm run prepare`                   | Setup Git hooks with Husky             |
+| `npm run db:generate`               | Generate Prisma client                 |
+| `npm run db:migrate`                | Run database migrations                |
+| `npm run db:migrate:deploy`         | Deploy migrations                      |
+| `npm run db:studio`                 | Open Prisma Studio for data management |
+| `npm run db:reset`                  | Reset database                         |
+| `npm run db:seed`                   | Seed database with sample data         |
+| `npm run generate:module -- <name>` | Scaffold a new module (e.g. `product`) |
 
 ---
 
@@ -209,7 +241,17 @@ Follow this step-by-step guide to create a new module that adheres to our archit
 
 1.  **Create folder structure for your new module:**
 
-    Establish the foundation for your new module by creating the standardized folder structure that ensures separation of concerns and maintainability
+    Establish the foundation for your new module by creating the standardized folder structure that ensures separation of concerns and maintainability.
+
+    **Option A — Generate with script (recommended):**
+
+    ```bash
+    npm run generate:module -- product
+    ```
+
+    This creates `src/modules/product/` with controllers, services, repositories, schemas, types, routes, and OpenAPI stubs. Then register the module in `src/routes/index.ts` and `src/core/docs/openapi/registries.ts` as printed by the script.
+
+    **Option B — Create manually:**
 
     ```
     src/
@@ -486,7 +528,16 @@ After starting the application (by running `npm run dev`), you can access the do
 http://localhost:8080/api-docs
 ```
 
-**Note:** The actual port may vary depending on your application configuration (commonly 3000, 8080, or 5000). Check your `.env` file configuration for the `PORT` environment variable to confirm the correct value
+**Note:** The actual port may vary depending on your application configuration (commonly 3000, 8080, or 5000). Check your `.env` file configuration for the `PORT` environment variable to confirm the correct value.
+
+#### Example HTTP requests
+
+The `http/` folder contains sample requests (VS Code REST Client, or similar):
+
+- `http/health.http` — Health check.
+- `http/auth-register.http` — User registration.
+- `http/auth-login.http` — Login and refresh token.
+- `http/auth-protected.http` — Example request with `Authorization: Bearer <token>`.
 
 ### What Gets Automatically Generated
 
@@ -773,6 +824,44 @@ The project integrates multiple layers of security to protect both the API and i
 - **Environment Isolation**: Sensitive configuration (e.g., credentials, tokens, secrets) is fully isolated using .env files and validated via a centralized schema
 - **Error Sanitization**: The error handler dynamically redacts sensitive details in production, exposing full stack traces only in development
 
+### JWT Authentication
+
+The API uses JWT for stateless auth. Configure these in `.env` (see [Getting Started](#getting-started)):
+
+| Variable                 | Description                                       |
+| ------------------------ | ------------------------------------------------- |
+| `JWT_ACCESS_SECRET`      | Secret to sign access tokens (min 32 characters). |
+| `JWT_REFRESH_SECRET`     | Optional; defaults to access secret if omitted.   |
+| `JWT_ACCESS_EXPIRES_IN`  | Access token TTL (e.g. `15m`, `1h`).              |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token TTL (e.g. `7d`).                    |
+
+**Endpoints**
+
+- `POST /api/auth/register` — Register (body: `name`, `email`, `password`).
+- `POST /api/auth/login` — Login (body: `email`, `password`). Returns `accessToken`, `refreshToken`, `user`.
+- `POST /api/auth/refresh` — Refresh tokens (body: `refreshToken`).
+
+**Using the token**
+
+Send the access token in the header:
+
+```http
+Authorization: Bearer <your-access-token>
+```
+
+**Protecting a route**
+
+Use the auth middleware from core and attach it to routes that require a valid JWT:
+
+```typescript
+import { authMiddleware } from '@core/middlewares/auth.middleware.js';
+
+// Protected route: req.user is set after JWT verification
+router.get('/me', authMiddleware, (req, res) => {
+  res.json({ user: req.user });
+});
+```
+
 ### Authentication Middleware
 
 All protected routes use a centralized JWT authentication middleware that:
@@ -780,6 +869,10 @@ All protected routes use a centralized JWT authentication middleware that:
 - Extracts and verifies the `Authorization: Bearer <token>` header.
 - Automatically rejects expired or invalid tokens with standardized 401 responses.
 - Injects the authenticated user context (`req.user`) into downstream handlers.
+
+### CORS
+
+`CORS_ORIGIN` accepts a **single URL** or **comma-separated list** (e.g. `http://localhost:3000,http://localhost:8080`). Each value must be a valid URL.
 
 ---
 
