@@ -3,30 +3,48 @@ import type { HealthData } from '@modules/health/types/health.type.js';
 import { HealthRepository } from '@modules/health/repositories/health.repository.js';
 
 export class HealthService {
+  /**
+   * Aggregates various system metrics to determine the overall health status.
+   * This is used for external monitoring (Kubernetes, AWS Route53, UptimeRobot).
+   * * @returns {Promise<HealthData>} A detailed health report including status and system metrics.
+   */
   static async getHealthStatus(): Promise<HealthData> {
-    // Verify database connection
-    const dbConnected: boolean = await HealthRepository.checkDatabaseConnection();
+    // Collect infrastructure and system-level metrics
+    const dbMetrics = await HealthRepository.getDatabaseMetrics();
 
-    // Define the base properties common to all responses
+    // Standard properties present in every health check response
     const baseData = {
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
+      uptime: Math.round(process.uptime()), // Uptime in seconds
       environment: env.NODE_ENV || 'development',
     };
 
-    // Return a 'healthy' status if the database is connected
-    if (dbConnected) {
+    const isHealthy = dbMetrics.connected;
+
+    // Successful Health Report
+    if (isHealthy) {
       return {
         ...baseData,
         status: 'healthy',
-        dependencies: { dbConnected },
+        dependencies: {
+          dbConnected: dbMetrics.connected,
+          dbLatency: dbMetrics.latency,
+        },
       };
     }
-    // Return an 'unhealthy' status if the database is not connected
+
+    /**
+     * Degraded/Unhealthy Report:
+     * Provides specific warning messages to help infrastructure teams
+     * identify the root cause (e.g., OOM or DB downtime).
+     */
     return {
       ...baseData,
       status: 'unhealthy',
-      dependencies: { dbConnected },
+      dependencies: {
+        dbConnected: dbMetrics.connected,
+        dbLatency: dbMetrics.latency,
+      },
     };
   }
 }

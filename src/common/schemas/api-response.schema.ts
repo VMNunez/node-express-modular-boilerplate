@@ -4,7 +4,7 @@ import { z } from 'zod';
 const BaseResponseSchema = z.object({
   success: z.boolean(),
   message: z.string(),
-  responseObject: z.any(),
+  responseObject: z.unknown(),
   statusCode: z.number(),
 });
 

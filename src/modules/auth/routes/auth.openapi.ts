@@ -15,7 +15,8 @@ import { ErrorResponseSchema } from '@/common/schemas/api-response.schema.js';
 
 const authRegistry = new OpenAPIRegistry();
 
-const errorResponses = (tag: string) => ({
+// Respuestas de error comunes (sin parámetro innecesario)
+const errorResponses = {
   ...createApiResponse(ErrorResponseSchema, 'Validation failed', HTTP_STATUS.UNPROCESSABLE_ENTITY),
   ...createApiResponse(
     ErrorResponseSchema,
@@ -23,7 +24,7 @@ const errorResponses = (tag: string) => ({
     HTTP_STATUS.CONFLICT,
   ),
   ...createApiResponse(ErrorResponseSchema, 'Unauthorized', HTTP_STATUS.UNAUTHORIZED),
-});
+};
 
 authRegistry.registerPath({
   method: 'post',
@@ -45,7 +46,7 @@ authRegistry.registerPath({
       'User registered successfully',
       HTTP_STATUS.CREATED,
     ),
-    ...errorResponses('register'),
+    ...errorResponses,
   },
 });
 
@@ -65,7 +66,7 @@ authRegistry.registerPath({
   },
   responses: {
     ...createApiResponse(AuthSuccessResponseSchema, 'Login successful', HTTP_STATUS.OK),
-    ...errorResponses('login'),
+    ...errorResponses,
   },
 });
 
@@ -85,7 +86,7 @@ authRegistry.registerPath({
   },
   responses: {
     ...createApiResponse(RefreshSuccessResponseSchema, 'Token refreshed', HTTP_STATUS.OK),
-    ...errorResponses('refresh'),
+    ...errorResponses,
   },
 });
 

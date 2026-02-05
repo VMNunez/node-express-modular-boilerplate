@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApiError } from '@core/middlewares/error-handler.middleware.js';
 import { AuthService } from '@modules/auth/services/auth.service.js';
+import bcrypt from 'bcryptjs';
 
 const mockRepo = vi.hoisted(() => ({
   findByEmail: vi.fn(),
@@ -42,11 +43,18 @@ describe('AuthService', () => {
 
       expect(mockRepo.findByEmail).toHaveBeenCalledWith('test@example.com');
       expect(mockRepo.createUser).toHaveBeenCalledTimes(1);
-      const createUserArg = mockRepo.createUser.mock.calls[0][0];
-      expect(createUserArg.name).toBe('Test User');
-      expect(createUserArg.email).toBe('test@example.com');
-      expect(typeof createUserArg.passwordHash).toBe('string');
-      expect(createUserArg.passwordHash.length).toBeGreaterThan(0);
+
+      // Validación segura del argumento
+      const createUserCalls = mockRepo.createUser.mock.calls;
+      expect(createUserCalls.length).toBeGreaterThan(0);
+
+      const createUserArg = createUserCalls[0]?.[0];
+      expect(createUserArg).toBeDefined();
+      expect(createUserArg?.name).toBe('Test User');
+      expect(createUserArg?.email).toBe('test@example.com');
+      expect(typeof createUserArg?.passwordHash).toBe('string');
+      expect(createUserArg?.passwordHash.length).toBeGreaterThan(0);
+
       expect(result.user).toEqual({
         id: createdUser.id,
         name: createdUser.name,
@@ -78,7 +86,10 @@ describe('AuthService', () => {
           email: 'existing@example.com',
           password: 'password123',
         }),
-      ).rejects.toMatchObject({ statusCode: 409, message: 'Email is already registered' });
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        message: 'Email is already registered',
+      });
 
       expect(mockRepo.createUser).not.toHaveBeenCalled();
     });
@@ -86,14 +97,17 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should return user and tokens when credentials are valid', async () => {
+      const passwordHash = await bcrypt.hash('password123', 10);
+
       const user = {
         id: 'user-uuid',
         name: 'Test User',
         email: 'test@example.com',
-        passwordHash: await import('bcryptjs').then((b) => b.default.hash('password123', 10)),
+        passwordHash,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
       mockRepo.findByEmail.mockResolvedValue(user);
 
       const result = await service.login({
@@ -128,14 +142,17 @@ describe('AuthService', () => {
     });
 
     it('should throw ApiError.unauthorized when password is invalid', async () => {
+      const passwordHash = await bcrypt.hash('correct', 10);
+
       const user = {
         id: 'user-uuid',
         name: 'Test',
         email: 'test@example.com',
-        passwordHash: await import('bcryptjs').then((b) => b.default.hash('correct', 10)),
+        passwordHash,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
       mockRepo.findByEmail.mockResolvedValue(user);
 
       await expect(
@@ -157,6 +174,7 @@ describe('AuthService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
       mockRepo.findById.mockResolvedValue(user);
 
       const { jwtUtil } = await import('@core/auth/jwt.util.js');
@@ -174,6 +192,7 @@ describe('AuthService', () => {
     it('should throw ApiError.unauthorized when user no longer exists', async () => {
       const { jwtUtil } = await import('@core/auth/jwt.util.js');
       const validRefreshToken = jwtUtil.signRefreshToken({ sub: 'deleted-user-id' });
+
       mockRepo.findById.mockResolvedValue(null);
 
       await expect(service.refresh({ refreshToken: validRefreshToken })).rejects.toMatchObject({

@@ -1,24 +1,41 @@
 import { env } from '@core/config/env.schema.js';
 import { PrismaClient } from '@prisma/client';
 
-// Global Prisma instance for connection reuse
+/**
+ * Prisma Client Singleton Configuration.
+ *  Connection pooling is managed via the DATABASE_URL environment variable.
+ * Recommended production parameters for the query string:
+ * - connection_limit: Max simultaneous connections (Default: 10)
+ * - pool_timeout: Max wait time for a free connection (Default: 10s)
+ *  Example: postgresql://user:pass@host:5432/db?connection_limit=20
+ */
 export const prisma = new PrismaClient({
-  // Configure logging based on environment
-  log: env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  errorFormat: 'minimal', // Use minimal error formatting
+  /**
+   * Logging Strategy:
+   * - Development: Detailed logs including every SQL query for debugging.
+   * - Production: Minimal logging (errors only) to optimize performance and security.
+   */
+  log: env.isDevelopment ? ['query', 'error', 'warn'] : ['error'],
+
+  /**
+   * Error Formatting:
+   * Using 'minimal' avoids long stack traces in logs that can lead to
+   * "log bloating" and potential exposure of internal DB structure.
+   */
+  errorFormat: 'minimal',
 });
 
-// Graceful shutdown - close DB connections when process ends
-process.on('beforeExit', async () => {
-  console.log('beforeExit: Closing database connections...');
-  await prisma.$disconnect();
-  console.log('Database connections closed');
-});
+/**
+ * NOTE: Resource Cleanup
+ * Graceful shutdown is orchestrated in 'main.ts'.
+ * It ensures the HTTP server stops accepting traffic before
+ * calling prisma.$disconnect(), preventing "Connection Closed" errors mid-request.
+ */
 
-// Handle Ctrl+C termination gracefully
-process.on('SIGINT', async () => {
-  console.log('SIGINT received: Graceful shutdown...');
-  await prisma.$disconnect();
-  console.log('Database connections closed');
-  process.exit(0); // Exit with success code
-});
+/**
+ * Centralized export of Database Resilience Utilities.
+ * This pattern allows other services to import 'prisma' and its
+ * retry logic from the same module.
+ */
+export { withRetry, dbCircuitBreaker } from './prisma-retry.util.js';
+export type { RetryConfig, CircuitBreakerConfig } from './prisma-retry.util.js';
