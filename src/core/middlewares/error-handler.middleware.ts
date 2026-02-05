@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { ServiceResponse } from '@utils/http/service-response.util.js';
 import { HTTP_STATUS } from '@utils/http/http-status.util.js';
 import { env } from '@config/env.schema.js';
-import { logger } from '@utils/logger.util.js';
+import { requestLogger } from '@utils/logger.util.js';
 import type {
   ValidationErrorDetail,
   ErrorResponseObject,
@@ -73,9 +73,10 @@ export const errorHandlerMiddleware = (
   const name = getErrorName(err);
   const stack = getErrorStack(err);
 
-  logger.error(`[${req.method}] ${req.originalUrl}`, {
-    name,
+  // Usar requestLogger para incluir correlation ID en el log
+  requestLogger.error(req, `Error: ${name}`, {
     message,
+    statusCode: err instanceof ApiError ? err.statusCode : 500,
     ...(env.isDevelopment && stack && { stack }),
   });
 
@@ -97,6 +98,12 @@ export const errorHandlerMiddleware = (
       path: issue.path.join('.'),
       message: issue.message,
     }));
+
+    // Log específico para errores de validación
+    requestLogger.warn(req, 'Validation error', {
+      validationErrors: err.issues.length,
+      details: errorDetails.map((d) => `${d.path}: ${d.message}`),
+    });
   }
   // Handle JWT Errors
   else if (name === 'JsonWebTokenError' || name === 'TokenExpiredError') {
@@ -110,14 +117,28 @@ export const errorHandlerMiddleware = (
     }
   }
 
+  // Construir objeto de respuesta incluyendo correlation ID
+  const baseResponse: Record<string, unknown> = {
+    requestId: req.id, // Incluir correlation ID en todas las respuestas de error
+  };
+
   if (env.isDevelopment) {
-    responseObject = { stack: stack ?? null, details: errorDetails };
+    responseObject = {
+      stack: stack ?? null,
+      details: errorDetails,
+      ...baseResponse,
+    };
   } else if (errorDetails) {
-    responseObject = { details: errorDetails };
+    responseObject = {
+      details: errorDetails,
+      ...baseResponse,
+    };
   } else {
-    responseObject = null;
+    responseObject = baseResponse;
   }
 
   const serviceResponse = ServiceResponse.failure(responseMessage, responseObject, statusCode);
+
+  // Headers ya están seteados en requestIdMiddleware
   res.status(statusCode).json(serviceResponse);
 };

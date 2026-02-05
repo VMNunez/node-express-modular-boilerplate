@@ -1,7 +1,7 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '@config/env.schema.js';
 
-const ALGORITHM = 'HS256' as const;
+const ALGORITHM = 'HS256';
 
 export type AccessTokenPayload = {
   sub: string;
@@ -27,7 +27,7 @@ function isAccessPayload(payload: TokenPayload): payload is AccessTokenPayload {
 export const jwtUtil = {
   signAccessToken(payload: Omit<AccessTokenPayload, 'type' | 'iat' | 'exp'>): string {
     return jwt.sign({ ...payload, type: 'access' as const }, env.JWT_ACCESS_SECRET, {
-      algorithm: 'HS256',
+      algorithm: ALGORITHM,
       expiresIn: env.JWT_ACCESS_EXPIRES_IN,
     } as SignOptions);
   },
@@ -35,14 +35,14 @@ export const jwtUtil = {
   signRefreshToken(payload: Omit<RefreshTokenPayload, 'type' | 'iat' | 'exp'>): string {
     const secret = env.JWT_REFRESH_SECRET ?? env.JWT_ACCESS_SECRET;
     return jwt.sign({ ...payload, type: 'refresh' as const }, secret, {
-      algorithm: 'HS256',
+      algorithm: ALGORITHM,
       expiresIn: env.JWT_REFRESH_EXPIRES_IN,
     } as SignOptions);
   },
 
   verifyAccessToken(token: string): AccessTokenPayload {
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET, {
-      algorithms: ['HS256'],
+      algorithms: [ALGORITHM],
     }) as TokenPayload;
     if (!isAccessPayload(decoded)) {
       throw new Error('Invalid token type');
@@ -53,7 +53,7 @@ export const jwtUtil = {
   verifyRefreshToken(token: string): RefreshTokenPayload {
     const secret = env.JWT_REFRESH_SECRET ?? env.JWT_ACCESS_SECRET;
     const decoded = jwt.verify(token, secret, {
-      algorithms: ['HS256'],
+      algorithms: [ALGORITHM],
     }) as TokenPayload;
     if (decoded.type !== 'refresh') {
       throw new Error('Invalid token type');

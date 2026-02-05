@@ -25,7 +25,7 @@ describe('AuthRepository', () => {
         name: 'Test User',
         email: 'test@example.com',
         passwordHash: 'hashed',
-      };
+      } as const; // Añadir 'as const' o tipar explícitamente
 
       const createdUser = {
         id: 'uuid-123',
@@ -38,7 +38,10 @@ describe('AuthRepository', () => {
 
       (prisma.user.create as Mock).mockResolvedValue(createdUser);
 
-      const result = await repository.createUser(userData);
+      // Hacer el cast al tipo esperado por el repositorio
+      const result = await repository.createUser(
+        userData as Parameters<typeof repository.createUser>[0],
+      );
 
       expect(prisma.user.create).toHaveBeenCalledTimes(1);
       expect(prisma.user.create).toHaveBeenCalledWith({

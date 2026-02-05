@@ -34,9 +34,16 @@ function validateEnv(env: NodeJS.ProcessEnv) {
   // Parses and validates the environment variables
   const parsed = envSchema.safeParse(env);
 
-  // If validation fails, throws an error
   if (!parsed.success) {
-    throw new Error('Invalid environment variables');
+    // Format Zod errors into a readable string for the terminal/logs
+    const errors = parsed.error.issues
+      .map((issue) => {
+        const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
+        return `${path}: ${issue.message}`;
+      })
+      .join('; ');
+
+    throw new Error(`Invalid environment variables: ${errors}`);
   }
 
   // Returns the validated object with helper properties
